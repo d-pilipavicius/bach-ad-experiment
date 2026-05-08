@@ -1,0 +1,17 @@
+name: anomalib_dev
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - ipykernel
+  - numpy
+  - matplotlib
+  - tqdm
+  - albumentations
+  - pytorch
+  - torchvision
+  - pytorch-cuda=11.8
+  - pip:
+    - anomalib[full]
