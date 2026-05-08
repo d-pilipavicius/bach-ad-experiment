@@ -4,7 +4,7 @@
   "worker_count": 0,
   "dataset_path": null,
   "batch_size": 8,
-  "train_setup": [
+  "setup": [
     {
       "name": "FSL-8-screw",
       "category": "screw_bag",

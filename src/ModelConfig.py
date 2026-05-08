@@ -9,19 +9,20 @@ class ModelConfig:
   _instance = None
   _initialized = False
 
-  def __new__(cls, train_setup_name: str = None):
+  def __new__(cls, setup_name: str = None):
     if cls._instance is None:
       cls._instance = super().__new__(cls)
     return cls._instance
   
-  def __init__(self, train_setup_name: str = "default"):
+  def __init__(self, setup_name: str | None = None):
     if not self.__class__._initialized:
+      setup_name = setup_name or "default"
       with open(f"{BASE_DIR}/config.json") as f:
         config = json.load(f)
-      trn_setup = get_trn_setup(train_setup_name, config)
+      setup = get_setup(setup_name, config)
 
-      if trn_setup == None:
-        raise ValueError(f"No configuration under name \"{train_setup_name}\" in config.json found")
+      if setup == None:
+        raise ValueError(f"No configuration under name \"{setup_name}\" in config.json found")
 
       # General values
       self.use_cuda = config["cuda"] and gpu_avail()
@@ -31,15 +32,15 @@ class ModelConfig:
       self.batch_size = config["batch_size"]
       
       # Training setup values
-      self.trn_setup_name = trn_setup["name"]
-      self.category = trn_setup["category"]
-      self.img_count = trn_setup.get("image_count")
-      self.random_samples = trn_setup.get("use_random_images")
-      self.model_filename = trn_setup["model_filename"]
-      self.image_w = trn_setup.get("image_w")
-      self.image_h = trn_setup.get("image_h")
+      self.setup_name = setup["name"]
+      self.category = setup["category"]
+      self.img_count = setup.get("image_count")
+      self.random_samples = setup.get("use_random_images")
+      self.model_filename = setup["model_filename"]
+      self.image_w = setup.get("image_w")
+      self.image_h = setup.get("image_h")
 
       self.__class__._initialized = True
 
-def get_trn_setup(train_setup_name, config):
-  return next((item for item in config["train_setup"] if item["name"].lower() == train_setup_name.lower()), None)
+def get_setup(setup_name, config):
+  return next((item for item in config["setup"] if item["name"].lower() == setup_name.lower()), None)
