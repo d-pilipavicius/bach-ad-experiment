@@ -46,7 +46,7 @@ class SubMVTecLOCO(MVTecLOCO):
     config = ModelConfig()
 
     if config.img_count != None:
-      self.train_data.samples = reduce_dataset(self.train_data.samples, config.batch_size, config.random_samples)
+      self.train_data.samples = reduce_dataset(self.train_data.samples, config.img_count, config.random_samples)
       
 def get_configured_ds() -> SubMVTecLOCO:
   config = ModelConfig()
