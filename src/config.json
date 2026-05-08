@@ -1,23 +1,29 @@
 {
   "cuda": true,
-  "threshold": 0.5,
   "worker_count": 0,
-  "dataset_path": null,
+  "dataset_path": "./mvtec_loco_anomaly_detection",
   "batch_size": 8,
+  "model_dir": "./results",
   "setup": [
     {
       "name": "FSL-8-screw",
+      "model": "patchcore",
       "category": "screw_bag",
+      "threshold": 0.5,
       "image_count": 8,
       "use_random_images": false,
-      "model_filename": "something.txt",
+      "model_src": "./results/Patchcore/MVTecLOCO/screw_bag/latest/weights/lightning/model.ckpt",
       "image_w": 256,
       "image_h": 256
     },
     {
       "name": "default",
-      "category": "breakfast_box",
-      "model_filename": "default.txt",
+      "model": "patchcore",
+      "category": "screw_bag",
+      "threshold": 0.5,
+      "image_count": 8,
+      "use_random_images": false,
+      "model_src": "./results/Patchcore/MVTecLOCO/screw_bag/latest/weights/lightning/model.ckpt",
       "image_w": 256,
       "image_h": 256
     }

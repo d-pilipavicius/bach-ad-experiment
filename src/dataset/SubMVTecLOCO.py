@@ -9,8 +9,8 @@ from anomalib.data.utils import TestSplitMode, ValSplitMode
 class SubMVTecLOCO(MVTecLOCO):
   def __init__(
     self,
-    root: Path | str | None = "./datasets/MVTec_LOCO",
-    category: str = "breakfast_box",
+    root: Path | str | None,
+    category: str,
     train_batch_size: int = 32,
     eval_batch_size: int = 32,
     num_workers: int = 8,
@@ -25,8 +25,8 @@ class SubMVTecLOCO(MVTecLOCO):
     seed: int | None = None,
   ) -> None:
     super().__init__(
-      root=root,
-      category=category,
+      root=root or "./datasets/MVTec_LOCO",
+      category=category or "breakfast_box",
       train_batch_size=train_batch_size,
       eval_batch_size=eval_batch_size,
       num_workers=num_workers,
@@ -46,7 +46,7 @@ class SubMVTecLOCO(MVTecLOCO):
     config = ModelConfig()
 
     if config.img_count != None:
-      self.train_data.samples = reduce_dataset(self.train_data.samples, config.img_count, config.random_samples)
+      self.train_data.samples = _reduce_dataset(self.train_data.samples, config.img_count, config.random_samples)
       
 def get_configured_ds() -> SubMVTecLOCO:
   config = ModelConfig()
@@ -61,7 +61,7 @@ def get_configured_ds() -> SubMVTecLOCO:
 
   return dataset
 
-def reduce_dataset(dataset: DataFrame, size: int = None, random_samples: bool = False) -> DataFrame:
+def _reduce_dataset(dataset: DataFrame, size: int = None, random_samples: bool = False) -> DataFrame:
   if size == None:
     return
   if size < 1:

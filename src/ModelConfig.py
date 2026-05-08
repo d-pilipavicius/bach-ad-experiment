@@ -1,5 +1,6 @@
 import os
 import json
+from enum import Enum
 
 from torch.cuda import is_available as gpu_avail
 
@@ -27,20 +28,25 @@ class ModelConfig:
       # General values
       self.use_cuda = config["cuda"] and gpu_avail()
       self.worker_count = config["worker_count"]
-      self.threshold = config["threshold"]
       self.ds_path = config.get("dataset_path")
       self.batch_size = config["batch_size"]
+      self.model_dir = config.get("model_dir") or "results" # Anomalib groups models deep inside files, this is only used to change the way it behaves when depositing the model after training
       
-      # Training setup values
+      # Setup values
       self.setup_name = setup["name"]
+      self.model = ModelType(setup.get("model").upper()) if setup.get("model") else ModelType.PATCHCORE # TODO: Add selected type of model as default
       self.category = setup["category"]
       self.img_count = setup.get("image_count")
       self.random_samples = setup.get("use_random_images")
-      self.model_filename = setup["model_filename"]
+      self.model_src = setup.get("model_src") # Used for testing/running 
       self.image_w = setup.get("image_w")
       self.image_h = setup.get("image_h")
+      self.threshold = setup.get("threshold")
 
       self.__class__._initialized = True
+
+class ModelType(Enum):
+  PATCHCORE = "PATCHCORE"
 
 def get_setup(setup_name, config):
   return next((item for item in config["setup"] if item["name"].lower() == setup_name.lower()), None)
