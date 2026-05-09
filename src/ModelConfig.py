@@ -40,8 +40,6 @@ class ModelConfig:
       self.img_count = setup.get("image_count")
       self.random_samples = setup.get("use_random_images")
       self.model_src = setup.get("model_src") # Used for testing/running 
-      self.image_w = setup.get("image_w")
-      self.image_h = setup.get("image_h")
       self.threshold = setup.get("threshold")
       self.max_epochs = setup.get("max_epochs")
 
