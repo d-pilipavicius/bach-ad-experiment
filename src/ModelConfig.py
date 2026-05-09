@@ -20,7 +20,7 @@ class ModelConfig:
       setup_name = setup_name or "default"
       with open(f"{BASE_DIR}/config.json") as f:
         config = json.load(f)
-      setup = get_setup(setup_name, config)
+      setup = _get_setup(setup_name, config)
 
       if setup == None:
         raise ValueError(f"No configuration under name \"{setup_name}\" in config.json found")
@@ -31,7 +31,8 @@ class ModelConfig:
       self.ds_path = config.get("dataset_path")
       self.batch_size = config["batch_size"]
       self.model_dir = config.get("model_dir") or "results" # Anomalib groups models deep inside files, this is only used to change the way it behaves when depositing the model after training
-      
+      self.output_dir = config["output_dir"]
+
       # Setup values
       self.setup_name = setup["name"]
       self.model = ModelType(setup.get("model").upper()) if setup.get("model") else ModelType.PATCHCORE # TODO: Add selected type of model as default
@@ -42,11 +43,12 @@ class ModelConfig:
       self.image_w = setup.get("image_w")
       self.image_h = setup.get("image_h")
       self.threshold = setup.get("threshold")
+      self.max_epochs = setup.get("max_epochs")
 
       self.__class__._initialized = True
 
 class ModelType(Enum):
   PATCHCORE = "PATCHCORE"
 
-def get_setup(setup_name, config):
+def _get_setup(setup_name: str, config: dict) -> dict:
   return next((item for item in config["setup"] if item["name"].lower() == setup_name.lower()), None)
