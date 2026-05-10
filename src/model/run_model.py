@@ -33,7 +33,7 @@ def test_model(model: AnomalibModule) -> any:
     "full": full_otp[0],
     "good": good_otp[0],
     "logical": log_otp[0],
-    "structual": str_otp[0]
+    "structural": str_otp[0]
   }
   formatted_output = format_metrics(output)
   write_file(FileType.TEST_DATA, formatted_output)

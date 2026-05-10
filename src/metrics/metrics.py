@@ -18,7 +18,7 @@ def format_metrics(model_output: dict) -> str:
   metrics += f"   FULL    |{_format_set(model_output['full'])}"
   metrics += f"   GOOD    |{_format_set(model_output['good'])}"
   metrics += f"  LOGICAL  |{_format_set(model_output['logical'])}"
-  metrics += f" STRUCTUAL |{_format_set(model_output['structual'])}"
+  metrics += f"STRUCTURAL |{_format_set(model_output['structural'])}"
 
   return metrics
 
