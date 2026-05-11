@@ -29,7 +29,6 @@ class ModelConfig:
       self.use_cuda = config["cuda"] and gpu_avail()
       self.worker_count = config["worker_count"]
       self.ds_path = config.get("dataset_path")
-      self.batch_size = config["batch_size"]
       self.model_dir = config.get("model_dir") or "results" # Anomalib groups models deep inside files, this is only used to change the way it behaves when depositing the model after training
       self.output_dir = config["output_dir"]
 
@@ -37,16 +36,17 @@ class ModelConfig:
       self.setup_name = setup["name"]
       self.model = ModelType(setup.get("model").upper()) if setup.get("model") else ModelType.PATCHCORE # TODO: Add selected type of model as default
       self.category = setup["category"]
+      self.batch_size = setup.get("batch_size")
       self.img_trn_count = setup.get("train_image_count")
       self.random_trn_samples = setup.get("use_random_train_images")
       self.model_src = setup.get("model_src") # Used for testing/running 
-      self.threshold = setup.get("threshold")
       self.max_epochs = setup.get("max_epochs")
 
       self.__class__._initialized = True
 
 class ModelType(Enum):
   PATCHCORE = "PATCHCORE"
+  EFFICIENTAD = "EFFICIENTAD"
 
 def _get_setup(setup_name: str, config: dict) -> dict:
   return next((item for item in config["setup"] if item["name"].lower() == setup_name.lower()), None)

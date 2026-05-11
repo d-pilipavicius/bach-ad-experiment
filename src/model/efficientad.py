@@ -2,12 +2,20 @@ from metrics.metrics import get_evaluator
 from utils.io import get_model_name, failed_loading_model
 
 import torch
-from anomalib.models import Patchcore
+from anomalib.models import EfficientAd as _EfficientAd
 
-def load_patchcore(pretrained: bool = False) -> Patchcore:
+class EfficientAd(_EfficientAd):
+  def test_step(self, batch, batch_idx, *args, **kwargs):
+    output = super().test_step(batch, batch_idx, *args, **kwargs)
+
+    if output and output.pred_score:
+      output.pred_score = output.pred_score.squeeze(1)
+
+    return output
+
+def load_efficientad(pretrained: bool = False) -> EfficientAd:
   evaluator = get_evaluator()
-  model = Patchcore(
-    coreset_sampling_ratio=0.1,
+  model = EfficientAd(
     evaluator=evaluator,
   )
 

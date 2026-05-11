@@ -21,9 +21,6 @@ def test_model(model: AnomalibModule) -> any:
   full_ds = get_configured_ds()
   full_otp = engine.test(model, full_ds)
   
-  good_ds = get_configured_ds(TestType.GOOD)
-  good_otp = engine.test(model, good_ds)
-  
   log_ds = get_configured_ds(TestType.LOGICAL)
   log_otp = engine.test(model, log_ds)
   
@@ -32,7 +29,6 @@ def test_model(model: AnomalibModule) -> any:
   
   output = {
     "full": full_otp[0],
-    "good": good_otp[0],
     "logical": log_otp[0],
     "structural": str_otp[0]
   }
@@ -56,7 +52,7 @@ def _get_engine() -> Engine:
     default_root_dir=config.model_dir,
     accelerator = "gpu" if config.use_cuda else "cpu",
     devices=1,
-    **opt("max_epochs",config.max_epochs),
+    **opt("max_epochs", config.max_epochs)
   )
 
   return engine

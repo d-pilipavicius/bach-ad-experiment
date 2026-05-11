@@ -67,9 +67,9 @@ def get_configured_ds(test_split: TestType | None = None) -> SubMVTecLOCO:
     root=config.ds_path,
     category=config.category,
     num_workers=config.worker_count,
-    train_batch_size=config.batch_size,
-    eval_batch_size=config.batch_size,
-    **opt("use_test_split", test_split)
+    **opt("train_batch_size",config.batch_size),
+    **opt("eval_batch_size",config.batch_size),
+    **opt("use_test_split", test_split),
   )
   dataset.setup()
 
