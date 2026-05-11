@@ -33,7 +33,7 @@ def write_file(type: FileType, data: any) -> None:
       # data is PIL image
       data.save(path)
 
-def get_model_name() -> str:
+def get_model_name() -> Path:
   config = ModelConfig()
   if config.model_src is None:
     path = _get_output_dir() / "model.ckpt"
@@ -41,6 +41,9 @@ def get_model_name() -> str:
     path = config.model_src
 
   return path
+
+def failed_loading_model(e: Exception) -> None:
+  raise ValueError("Model path likely wrong, check if model exists at provided directory or if selected configuration was trained") from e
 
 def _get_filename(type: FileType) -> str:
   now = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')

@@ -1,6 +1,7 @@
 from utils.dict import opt
 from ModelConfig import ModelConfig
 from metrics.metrics import format_metrics
+from utils.image import output_to_marked_pil
 from utils.io import write_file, move_model, FileType
 from dataset.SubMVTecLOCO import get_configured_ds, TestType
 
@@ -38,6 +39,16 @@ def test_model(model: AnomalibModule) -> any:
   formatted_output = format_metrics(output)
   write_file(FileType.TEST_DATA, formatted_output)
   return output
+
+def run_model(model: AnomalibModule, image_filepath: str):
+  engine = Engine()
+
+  prediction = engine.predict(
+    model=model,
+    data_path=image_filepath
+  )
+  image = output_to_marked_pil(prediction[0])
+  write_file(FileType.IMAGE, image)
 
 def _get_engine() -> Engine:
   config = ModelConfig()
