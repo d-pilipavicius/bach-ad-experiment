@@ -37,8 +37,8 @@ class ModelConfig:
       self.setup_name = setup["name"]
       self.model = ModelType(setup.get("model").upper()) if setup.get("model") else ModelType.PATCHCORE # TODO: Add selected type of model as default
       self.category = setup["category"]
-      self.img_count = setup.get("image_count")
-      self.random_samples = setup.get("use_random_images")
+      self.img_trn_count = setup.get("train_image_count")
+      self.random_trn_samples = setup.get("use_random_train_images")
       self.model_src = setup.get("model_src") # Used for testing/running 
       self.threshold = setup.get("threshold")
       self.max_epochs = setup.get("max_epochs")

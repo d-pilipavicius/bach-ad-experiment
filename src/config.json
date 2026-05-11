@@ -10,74 +10,74 @@
       "name": "patch-screw-5",
       "model": "patchcore",
       "category": "screw_bag",
-      "image_count": 5,
-      "use_random_images": false
+      "train_image_count": 5,
+      "use_random_train_images": false
     },
     {
       "name": "patch-break-5",
       "model": "patchcore",
       "category": "breakfast_box",
-      "image_count": 5,
-      "use_random_images": false
+      "train_image_count": 5,
+      "use_random_train_images": false
     },
     {
       "name": "patch-juice-5",
       "model": "patchcore",
       "category": "juice_bottle",
-      "image_count": 5,
-      "use_random_images": false
+      "train_image_count": 5,
+      "use_random_train_images": false
     },
     {
       "name": "patch-pins-5",
       "model": "patchcore",
       "category": "pushpins",
-      "image_count": 5,
-      "use_random_images": false
+      "train_image_count": 5,
+      "use_random_train_images": false
     },
     {
       "name": "patch-splic-5",
       "model": "patchcore",
       "category": "splicing_connectors",
-      "image_count": 5,
-      "use_random_images": false
+      "train_image_count": 5,
+      "use_random_train_images": false
     },
-        {
+    {
       "name": "patch-screw",
       "model": "patchcore",
       "category": "screw_bag",
-      "use_random_images": false
+      "use_random_train_images": false
     },
     {
       "name": "patch-break",
       "model": "patchcore",
       "category": "breakfast_box",
-      "use_random_images": false
+      "use_random_train_images": false
     },
     {
       "name": "patch-juice",
       "model": "patchcore",
       "category": "juice_bottle",
-      "use_random_images": false
+      "use_random_train_images": false
     },
     {
       "name": "patch-pins",
       "model": "patchcore",
       "category": "pushpins",
-      "use_random_images": false
+      "use_random_train_images": false
     },
     {
       "name": "patch-splic",
       "model": "patchcore",
       "category": "splicing_connectors",
-      "use_random_images": false
+      "use_random_train_images": false
     },
     {
       "name": "default",
       "model": "patchcore",
       "category": "screw_bag",
       "threshold": 0.5,
-      "image_count": 8,
-      "use_random_images": false
+      "train_image_count": 8,
+      "use_random_train_images": false
     }
   ]
 }

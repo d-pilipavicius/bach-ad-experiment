@@ -55,8 +55,8 @@ class SubMVTecLOCO(MVTecLOCO):
     super()._setup(_stage)
     config = ModelConfig()
 
-    if config.img_count != None:
-      self.train_data.samples = _reduce_dataset(self.train_data.samples, config.img_count, config.random_samples)
+    if config.img_trn_count != None:
+      self.train_data.samples = _reduce_dataset(self.train_data.samples, config.img_trn_count, config.random_trn_samples)
 
     if self.use_test_split is not None:
       self.test_data.samples = _select_test_data(self.test_data.samples, self.use_test_split)
