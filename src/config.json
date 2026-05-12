@@ -11,7 +11,7 @@
       "category": "screw_bag",
       "use_random_train_images": false,
       "batch_size": 8,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "cfa-break",
@@ -19,7 +19,7 @@
       "category": "breakfast_box",
       "use_random_train_images": false,
       "batch_size": 8,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "cfa-juice",
@@ -27,7 +27,7 @@
       "category": "juice_bottle",
       "use_random_train_images": false,
       "batch_size": 8,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "cfa-pins",
@@ -35,7 +35,7 @@
       "category": "pushpins",
       "use_random_train_images": false,
       "batch_size": 8,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "cfa-splic",
@@ -43,7 +43,7 @@
       "category": "splicing_connectors",
       "use_random_train_images": false,
       "batch_size": 8,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "eff-screw",
@@ -51,7 +51,7 @@
       "category": "screw_bag",
       "use_random_train_images": false,
       "batch_size": 1,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "eff-break",
@@ -59,7 +59,7 @@
       "category": "breakfast_box",
       "use_random_train_images": false,
       "batch_size": 1,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "eff-juice",
@@ -67,7 +67,7 @@
       "category": "juice_bottle",
       "use_random_train_images": false,
       "batch_size": 1,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "eff-pins",
@@ -75,7 +75,7 @@
       "category": "pushpins",
       "use_random_train_images": false,
       "batch_size": 1,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "eff-splic",
@@ -83,7 +83,7 @@
       "category": "splicing_connectors",
       "use_random_train_images": false,
       "batch_size": 1,
-      "epoch_count": 100
+      "max_epochs": 100
     },
     {
       "name": "patch-screw",
