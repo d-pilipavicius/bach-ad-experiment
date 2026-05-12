@@ -10,70 +10,80 @@
       "model": "cfa",
       "category": "screw_bag",
       "use_random_train_images": false,
-      "batch_size": 8
+      "batch_size": 8,
+      "epoch_count": 100
     },
     {
       "name": "cfa-break",
       "model": "cfa",
       "category": "breakfast_box",
       "use_random_train_images": false,
-      "batch_size": 8
+      "batch_size": 8,
+      "epoch_count": 100
     },
     {
       "name": "cfa-juice",
       "model": "cfa",
       "category": "juice_bottle",
       "use_random_train_images": false,
-      "batch_size": 8
+      "batch_size": 8,
+      "epoch_count": 100
     },
     {
       "name": "cfa-pins",
       "model": "cfa",
       "category": "pushpins",
       "use_random_train_images": false,
-      "batch_size": 8
+      "batch_size": 8,
+      "epoch_count": 100
     },
     {
       "name": "cfa-splic",
       "model": "cfa",
       "category": "splicing_connectors",
       "use_random_train_images": false,
-      "batch_size": 8
+      "batch_size": 8,
+      "epoch_count": 100
     },
     {
       "name": "eff-screw",
       "model": "efficientad",
       "category": "screw_bag",
       "use_random_train_images": false,
-      "batch_size": 1
+      "batch_size": 1,
+      "epoch_count": 100
     },
     {
       "name": "eff-break",
       "model": "efficientad",
       "category": "breakfast_box",
       "use_random_train_images": false,
-      "batch_size": 1
+      "batch_size": 1,
+      "epoch_count": 100
     },
     {
       "name": "eff-juice",
       "model": "efficientad",
       "category": "juice_bottle",
       "use_random_train_images": false,
-      "batch_size": 1
+      "batch_size": 1,
+      "epoch_count": 100
     },
     {
       "name": "eff-pins",
       "model": "efficientad",
       "category": "pushpins",
       "use_random_train_images": false,
-      "batch_size": 1
+      "batch_size": 1,
+      "epoch_count": 100
     },
     {
       "name": "eff-splic",
       "model": "efficientad",
       "category": "splicing_connectors",
       "use_random_train_images": false,
-      "batch_size": 1
+      "batch_size": 1,
+      "epoch_count": 100
     },
     {
       "name": "patch-screw",
