@@ -51,11 +51,11 @@ def _flag_parser(argv: list[str]) -> dict:
   flags = _init_flags()
 
   while len(argv) > 0:
-    match argv[0]:
-      case "-n":
+    match argv[0].upper():
+      case "-N":
         _load_setup_name(flags, argv)
         argv = argv[2:]
-      case "-i":
+      case "-I":
         load_test_image(flags, argv)
         argv = argv[2:]
       case _:
