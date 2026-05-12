@@ -5,11 +5,11 @@ from ModelConfig import ModelConfig
 from anomalib.data import MVTecLOCO
 
 from pathlib import Path
-from pandas import DataFrame
+from pandas import DataFrame, concat
 from torchvision.transforms.v2 import Transform
 from anomalib.data.utils import TestSplitMode, ValSplitMode
 
-class TestType(Enum):
+class SampleType(Enum):
   GOOD = "good"
   LOGICAL = "logical_anomalies"
   STRUCTURAL = "structural_anomalies"
@@ -31,10 +31,10 @@ class SubMVTecLOCO(MVTecLOCO):
     test_split_ratio: float | None = 0,
     val_split_ratio: float | None = None,
     seed: int | None = None,
-    use_test_split: TestType | None = None,
+    use_test_split: SampleType | None = None,
   ) -> None:
     super().__init__(
-      root=root or "./datasets/MVTec_LOCO",
+      **opt("root", root),
       category=category or "breakfast_box",
       train_batch_size=train_batch_size,
       eval_batch_size=eval_batch_size,
@@ -55,13 +55,27 @@ class SubMVTecLOCO(MVTecLOCO):
     super()._setup(_stage)
     config = ModelConfig()
 
-    if config.img_trn_count != None:
-      self.train_data.samples = _reduce_dataset(self.train_data.samples, config.img_trn_count, config.random_trn_samples)
+    train_ds = self.train_data.samples
+    test_ds = self.test_data.samples
+
+    if config.img_trn_count is not None:
+      train_ds = _reduce_dataset(train_ds, config.img_trn_count, config.random_trn_samples)
+
+    if config.trn_logical is not None:
+      test_ds, split = _split_dataset(test_ds, SampleType.LOGICAL, config.trn_logical)
+      train_ds = concat([train_ds, split], ignore_index=True)
+
+    if config.trn_structural is not None:
+      test_ds, split = _split_dataset(test_ds, SampleType.STRUCTURAL, config.trn_structural)
+      train_ds = concat([train_ds, split], ignore_index=True)
 
     if self.use_test_split is not None:
-      self.test_data.samples = _select_test_data(self.test_data.samples, self.use_test_split)
-      
-def get_configured_ds(test_split: TestType | None = None) -> SubMVTecLOCO:
+      test_ds = _select_test_data(test_ds, self.use_test_split)
+
+    self.train_data.samples = train_ds
+    self.test_data.samples = test_ds
+
+def get_configured_ds(test_split: SampleType | None = None) -> SubMVTecLOCO:
   config = ModelConfig()
   dataset = SubMVTecLOCO(
     root=config.ds_path,
@@ -75,8 +89,10 @@ def get_configured_ds(test_split: TestType | None = None) -> SubMVTecLOCO:
 
   return dataset
 
-def _reduce_dataset(dataset: DataFrame, size: int = None, random_samples: bool = False) -> DataFrame:
-  if size == None:
+def _reduce_dataset(dataset: DataFrame, size: int = None, random_samples: bool | None = False) -> DataFrame:
+  if random_samples is None:
+    random_samples = False  
+  if size is None:
     return
   if size < 1:
     raise ValueError("Train dataset must have a positive number of data")
@@ -91,5 +107,13 @@ def _reduce_dataset(dataset: DataFrame, size: int = None, random_samples: bool =
   
   return dataset
 
-def _select_test_data(dataset: DataFrame, type: TestType) -> DataFrame:
-  return dataset[dataset["label"] == type.value]
+def _select_test_data(dataset: DataFrame, sample_type: SampleType) -> DataFrame:
+  return dataset[dataset["label"] == sample_type.value]
+
+def _split_dataset(dataset: DataFrame, sample_type: SampleType, sample_names: list[str]) -> tuple[DataFrame, DataFrame]:
+  subset = dataset[
+    (dataset["label"] == sample_type.value) &
+    (dataset["image_path"].apply(lambda x: any(name in x for name in sample_names)))
+  ]
+  remaining = dataset.drop(subset.index)
+  return remaining, subset

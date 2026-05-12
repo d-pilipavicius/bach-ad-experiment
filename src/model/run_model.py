@@ -3,7 +3,7 @@ from ModelConfig import ModelConfig
 from metrics.metrics import format_metrics
 from utils.image import output_to_marked_pil
 from utils.io import write_file, move_model, FileType
-from dataset.SubMVTecLOCO import get_configured_ds, TestType
+from dataset.SubMVTecLOCO import get_configured_ds, SampleType
 
 from anomalib.engine import Engine
 from anomalib.models import AnomalibModule
@@ -21,10 +21,10 @@ def test_model(model: AnomalibModule) -> any:
   full_ds = get_configured_ds()
   full_otp = engine.test(model, full_ds)
   
-  log_ds = get_configured_ds(TestType.LOGICAL)
+  log_ds = get_configured_ds(SampleType.LOGICAL)
   log_otp = engine.test(model, log_ds)
   
-  str_ds = get_configured_ds(TestType.STRUCTURAL)
+  str_ds = get_configured_ds(SampleType.STRUCTURAL)
   str_otp = engine.test(model, str_ds)
   
   output = {

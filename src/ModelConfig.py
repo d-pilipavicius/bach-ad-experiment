@@ -22,7 +22,7 @@ class ModelConfig:
         config = json.load(f)
       setup = _get_setup(setup_name, config)
 
-      if setup == None:
+      if setup is None:
         raise ValueError(f"No configuration under name \"{setup_name}\" in config.json found")
 
       # General values
@@ -41,6 +41,8 @@ class ModelConfig:
       self.random_trn_samples = setup.get("use_random_train_images")
       self.model_src = setup.get("model_src") # Used for testing/running 
       self.max_epochs = setup.get("max_epochs")
+      self.trn_logical = setup.get("trn_logical")
+      self.trn_structural = setup.get("trn_structural")
 
       self.__class__._initialized = True
 
