@@ -3,3 +3,4 @@ results/
 .vscode/
 output/
 datasets/
+mvtec_loco_anomaly_detection/
