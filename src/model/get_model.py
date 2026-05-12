@@ -1,6 +1,7 @@
 from ModelConfig import ModelType
 from model.patchcore import load_patchcore
 from model.efficientad import load_efficientad
+from model.cfa import load_cfa
 
 from anomalib.models import AnomalibModule
 
@@ -10,5 +11,7 @@ def get_model(type: ModelType, pretrained: bool = False) -> AnomalibModule:
       model = load_patchcore(pretrained)
     case ModelType.EFFICIENTAD:
       model = load_efficientad(pretrained)
+    case ModelType.CFA:
+      model = load_cfa(pretrained)
   
   return model

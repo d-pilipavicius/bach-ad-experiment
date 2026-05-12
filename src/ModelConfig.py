@@ -47,6 +47,7 @@ class ModelConfig:
 class ModelType(Enum):
   PATCHCORE = "PATCHCORE"
   EFFICIENTAD = "EFFICIENTAD"
+  CFA = "CFA"
 
 def _get_setup(setup_name: str, config: dict) -> dict:
   return next((item for item in config["setup"] if item["name"].lower() == setup_name.lower()), None)

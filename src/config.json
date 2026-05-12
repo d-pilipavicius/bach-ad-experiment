@@ -2,88 +2,113 @@
   "cuda": true,
   "worker_count": 0,
   "dataset_path": "./mvtec_loco_anomaly_detection",
-  "batch_size": 8,
   "model_dir": "./results",
   "output_dir": "./output",
   "setup": [
     {
-      "name": "eff-screw-5",
+      "name": "cfa-screw",
+      "model": "cfa",
+      "category": "screw_bag",
+      "use_random_train_images": false,
+      "batch_size": 8
+    },
+    {
+      "name": "cfa-break",
+      "model": "cfa",
+      "category": "breakfast_box",
+      "use_random_train_images": false,
+      "batch_size": 8
+    },
+    {
+      "name": "cfa-juice",
+      "model": "cfa",
+      "category": "juice_bottle",
+      "use_random_train_images": false,
+      "batch_size": 8
+    },
+    {
+      "name": "cfa-pins",
+      "model": "cfa",
+      "category": "pushpins",
+      "use_random_train_images": false,
+      "batch_size": 8
+    },
+    {
+      "name": "cfa-splic",
+      "model": "cfa",
+      "category": "splicing_connectors",
+      "use_random_train_images": false,
+      "batch_size": 8
+    },
+    {
+      "name": "eff-screw",
       "model": "efficientad",
       "category": "screw_bag",
-      "batch_size": 1,
-      "train_image_count": 5,
       "use_random_train_images": false,
-      "max_epochs": 50
+      "batch_size": 1
     },
     {
-      "name": "patch-screw-5",
-      "model": "patchcore",
-      "category": "screw_bag",
-      "batch_size": 8,
-      "train_image_count": 5,
-      "use_random_train_images": false
-    },
-    {
-      "name": "patch-break-5",
-      "model": "patchcore",
+      "name": "eff-break",
+      "model": "efficientad",
       "category": "breakfast_box",
-      "batch_size": 8,
-      "train_image_count": 5,
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 1
     },
     {
-      "name": "patch-juice-5",
-      "model": "patchcore",
+      "name": "eff-juice",
+      "model": "efficientad",
       "category": "juice_bottle",
-      "batch_size": 8,
-      "train_image_count": 5,
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 1
     },
     {
-      "name": "patch-pins-5",
-      "model": "patchcore",
+      "name": "eff-pins",
+      "model": "efficientad",
       "category": "pushpins",
-      "batch_size": 8,
-      "train_image_count": 5,
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 1
     },
     {
-      "name": "patch-splic-5",
-      "model": "patchcore",
+      "name": "eff-splic",
+      "model": "efficientad",
       "category": "splicing_connectors",
-      "batch_size": 8,
-      "train_image_count": 5,
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 1
     },
     {
       "name": "patch-screw",
       "model": "patchcore",
       "category": "screw_bag",
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 8
     },
     {
       "name": "patch-break",
       "model": "patchcore",
       "category": "breakfast_box",
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 8
     },
     {
       "name": "patch-juice",
       "model": "patchcore",
       "category": "juice_bottle",
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 8
     },
     {
       "name": "patch-pins",
       "model": "patchcore",
       "category": "pushpins",
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 8
     },
     {
       "name": "patch-splic",
       "model": "patchcore",
       "category": "splicing_connectors",
-      "use_random_train_images": false
+      "use_random_train_images": false,
+      "batch_size": 8
     },
     {
       "name": "default",
