@@ -56,10 +56,10 @@ python main.py -h
 
 In order to train a model from scratch, run
 ```bash
-python main.py TRAIN -n CONFIG_NAME
+python main.py TRAIN -n SETUP_NAME
 ```
 
-To read more about CONFIG_NAME, refer to [Setups](#setups) "name" explanation.
+To read more about SETUP_NAME, refer to [Setups](#setups) "name" explanation.
 
 The trained model gets placed inside the "output" path, under the selected setup folder.
 
@@ -67,7 +67,7 @@ The trained model gets placed inside the "output" path, under the selected setup
 
 In order to test a pre-trained model, run
 ```bash
-python main.py TEST -n CONFIG_NAME
+python main.py TEST -n SETUP_NAME
 ```
 
 The model statistics get saved under the "output" path inside of a txt file. Each tested image is outputed to the "results" path under the selected model. For example, if the PatchCore model for breakfast_box is used with the default results path, the images will be placed under `src/results/Patchcore/MVTecLOCO/breakfast_box/latest/images`,  
@@ -76,8 +76,10 @@ The model statistics get saved under the "output" path inside of a txt file. Eac
 
 To see how the model performs with a specific image, run
 ```bash
-python main.py IMAGE -n CONFIG_NAME -i IMAGE_PATH
+python main.py IMAGE -n SETUP_NAME -i IMAGE_PATH
 ```
+
+The image is then placed under the current setup's directory in the "output" folder.
 
 ## Config.json configuration
 

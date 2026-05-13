@@ -93,8 +93,8 @@ def _print_info() -> None:
     Usage: python main.py (TRAIN|TEST|IMAGE)
   
     Startup:
-      -n CONFIG_NAME            Starts code using specific "setup" from config.json file. 
-                                CONFIG_NAME is case insensitive. By default, CONFIG_NAME=default.
+      -n SETUP_NAME             Starts code using specific "setup" from config.json file. 
+                                SETUP_NAME is case insensitive. By default, SETUP_NAME=default.
       -i IMAGE_PATH             When used with runtype IMAGE, imports image from filepath, runs
                                 it through the model, produced the output in "output_dir" directory
                                 defined in config.json.
