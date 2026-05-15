@@ -5,6 +5,7 @@
 Paper: https://arxiv.org/abs/2106.08265
 """
 
+from enum import Enum
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -23,6 +24,10 @@ if TYPE_CHECKING:
 
 DEFAULT_CHUNK_SIZE = 1024
 
+
+class TrainType(Enum):
+  GOOD = 0
+  ANOMALOUS = 1
 
 class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
 
@@ -48,73 +53,66 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
     self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
     self.anomaly_map_generator = AnomalyMapGenerator()
     self.memory_bank: torch.Tensor
+    self.anomaly_memory_bank: TrainType
     self.register_buffer("memory_bank", torch.empty(0))
     self.embedding_store: list[torch.tensor] = []
 
   def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | InferenceBatch:
-      """Process input tensor through the model.
+    """Process input tensor through the model.
 
-      During training, returns embeddings extracted from the input. During
-      inference, returns anomaly maps and scores computed by comparing input
-      embeddings against the memory bank.
+    During training, returns embeddings extracted from the input. During
+    inference, returns anomaly maps and scores computed by comparing input
+    embeddings against the memory bank.
 
-      Args:
-          input_tensor (torch.Tensor): Input images of shape
-              ``(batch_size, channels, height, width)``.
+    Args:
+      input_tensor (torch.Tensor): Input images of shape
+        ``(batch_size, channels, height, width)``.
 
-      Returns:
-          torch.Tensor | InferenceBatch: During training, returns embeddings.
-              During inference, returns ``InferenceBatch`` containing anomaly
-              maps and scores.
+    Returns:
+      torch.Tensor | InferenceBatch: During training, returns embeddings.
+        During inference, returns ``InferenceBatch`` containing anomaly
+        maps and scores.
+    """
 
-      Example:
-          >>> model = PatchcoreModel(layers=["layer1"])
-          >>> input_tensor = torch.randn(32, 3, 224, 224)
-          >>> output = model(input_tensor)
-          >>> if model.training:
-          ...     assert isinstance(output, torch.Tensor)
-          ... else:
-          ...     assert isinstance(output, InferenceBatch)
-      """
-      input_tensor = input_tensor.type(self.memory_bank.dtype)
-      output_size = input_tensor.shape[-2:]
-      if self.tiler:
-          input_tensor = self.tiler.tile(input_tensor)
+    input_tensor = input_tensor.type(self.memory_bank.dtype)
+    output_size = input_tensor.shape[-2:]
+    if self.tiler:
+      input_tensor = self.tiler.tile(input_tensor)
 
-      with torch.no_grad():
-          features = self.feature_extractor(input_tensor)
+    with torch.no_grad():
+      features = self.feature_extractor(input_tensor)
 
-      features = {layer: self.feature_pooler(feature) for layer, feature in features.items()}
-      embedding = self.generate_embedding(features)
+    features = {layer: self.feature_pooler(feature) for layer, feature in features.items()}
+    embedding = self.generate_embedding(features)
 
-      if self.tiler:
-          embedding = self.tiler.untile(embedding)
+    if self.tiler:
+      embedding = self.tiler.untile(embedding)
 
-      batch_size, _, width, height = embedding.shape
-      embedding = self.reshape_embedding(embedding)
+    batch_size, _, width, height = embedding.shape
+    embedding = self.reshape_embedding(embedding)
 
-      if self.training:
-          self.embedding_store.append(embedding)
-          return embedding
+    if self.training:
+      self.embedding_store.append(embedding)
+      return embedding
 
-      # Ensure memory bank is not empty
-      if self.memory_bank.size(0) == 0:
-          msg = "Memory bank is empty. Cannot provide anomaly scores"
-          raise ValueError(msg)
+    # Ensure memory bank is not empty
+    if self.memory_bank.size(0) == 0:
+      msg = "Memory bank is empty. Cannot provide anomaly scores"
+      raise ValueError(msg)
 
-      # apply nearest neighbor search
-      patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1)
-      # reshape to batch dimension
-      patch_scores = patch_scores.reshape((batch_size, -1))
-      locations = locations.reshape((batch_size, -1))
-      # compute anomaly score
-      pred_score = self.compute_anomaly_score(patch_scores, locations, embedding)
-      # reshape to w, h
-      patch_scores = patch_scores.reshape((batch_size, 1, width, height))
-      # get anomaly map
-      anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
+    # apply nearest neighbor search
+    patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1, memory_bank=self.memory_bank)
+    # reshape to batch dimension
+    patch_scores = patch_scores.reshape((batch_size, -1))
+    locations = locations.reshape((batch_size, -1))
+    # compute anomaly score
+    pred_score = self.compute_anomaly_score(patch_scores, locations, embedding, self.memory_bank)
+    # reshape to w, h
+    patch_scores = patch_scores.reshape((batch_size, 1, width, height))
+    # get anomaly map
+    anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
 
-      return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
+    return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
   def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
       """Generate embedding by concatenating multi-scale feature maps.
@@ -239,125 +237,125 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
       res.add_(y_norm.transpose(-2, -1))
       return res.clamp_min_(0).sqrt_()
 
-  def nearest_neighbors(self, embedding: torch.Tensor, n_neighbors: int) -> tuple[torch.Tensor, torch.Tensor]:
-      """Find nearest neighbors in memory bank for input embeddings.
+  def nearest_neighbors(
+    self, 
+    embedding: torch.Tensor, 
+    n_neighbors: int, 
+    memory_bank: torch.Tensor
+  ) -> tuple[torch.Tensor, torch.Tensor]:
+    """Find nearest neighbors in memory bank for input embeddings.
 
-      Uses brute force search with Euclidean distance to find the closest
-      matches in the memory bank for each input embedding. Processes embeddings
-      in chunks to reduce memory usage for large embedding sets.
+    Uses brute force search with Euclidean distance to find the closest
+    matches in the memory bank for each input embedding. Processes embeddings
+    in chunks to reduce memory usage for large embedding sets.
 
-      Args:
-          embedding (torch.Tensor): Query embeddings to find neighbors for.
-          n_neighbors (int): Number of nearest neighbors to return.
+    Args:
+      embedding (torch.Tensor): Query embeddings to find neighbors for.
+      n_neighbors (int): Number of nearest neighbors to return.
+      memory_bank (torch.Tensor): Memory bank used in embedding search.
 
-      Returns:
-          tuple[torch.Tensor, torch.Tensor]: Tuple containing:
-              - Distances to nearest neighbors (shape: ``(n, k)``)
-              - Indices of nearest neighbors (shape: ``(n, k)``)
-              where ``n`` is number of query embeddings and ``k`` is
-              ``n_neighbors``.
+    Returns:
+      tuple[torch.Tensor, torch.Tensor]: Tuple containing:
+        - Distances to nearest neighbors (shape: ``(n, k)``)
+        - Indices of nearest neighbors (shape: ``(n, k)``)
+        where ``n`` is number of query embeddings and ``k`` is
+        ``n_neighbors``.
 
-      Example:
-          >>> embedding = torch.randn(100, 512)
-          >>> # Assuming memory_bank is already populated
-          >>> scores, locations = model.nearest_neighbors(embedding, n_neighbors=5)
-          >>> scores.shape, locations.shape
-          (torch.Size([100, 5]), torch.Size([100, 5]))
-      """
-      n = embedding.shape[0]
-      chunk_size = DEFAULT_CHUNK_SIZE
+    Example:
+      >>> embedding = torch.randn(100, 512)
+      >>> # Assuming memory_bank is already populated
+      >>> scores, locations = model.nearest_neighbors(embedding, n_neighbors=5)
+      >>> scores.shape, locations.shape
+      (torch.Size([100, 5]), torch.Size([100, 5]))
+    """
+    n = embedding.shape[0]
+    chunk_size = DEFAULT_CHUNK_SIZE
 
-      if n <= chunk_size:
-          # Small embedding set: process all at once
-          distances = self.euclidean_dist(embedding, self.memory_bank)
-          if n_neighbors == 1:
-              # when n_neighbors is 1, speed up computation by using min instead of topk
-              patch_scores, locations = distances.min(1)
-          else:
-              patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
+    if n <= chunk_size:
+      # Small embedding set: process all at once
+      distances = self.euclidean_dist(embedding, memory_bank)
+      if n_neighbors == 1:
+        # when n_neighbors is 1, speed up computation by using min instead of topk
+        patch_scores, locations = distances.min(1)
       else:
-          # Large embedding set: process in chunks
-          all_scores = []
-          all_locations = []
+        patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
+    else:
+      # Large embedding set: process in chunks
+      all_scores = []
+      all_locations = []
 
-          for start_idx in range(0, n, chunk_size):
-              end_idx = min(start_idx + chunk_size, n)
-              embedding_chunk = embedding[start_idx:end_idx]
+      for start_idx in range(0, n, chunk_size):
+        end_idx = min(start_idx + chunk_size, n)
+        embedding_chunk = embedding[start_idx:end_idx]
 
-              # Compute distances for this chunk against full memory bank
-              distances = self.euclidean_dist(embedding_chunk, self.memory_bank)
+        # Compute distances for this chunk against full memory bank
+        distances = self.euclidean_dist(embedding_chunk, memory_bank)
 
-              # Find top-k neighbors immediately and discard full distance matrix
-              if n_neighbors == 1:
-                  chunk_scores, chunk_locations = distances.min(1)
-              else:
-                  chunk_scores, chunk_locations = distances.topk(k=n_neighbors, largest=False, dim=1)
+        # Find top-k neighbors immediately and discard full distance matrix
+        if n_neighbors == 1:
+          chunk_scores, chunk_locations = distances.min(1)
+        else:
+          chunk_scores, chunk_locations = distances.topk(k=n_neighbors, largest=False, dim=1)
 
-              all_scores.append(chunk_scores)
-              all_locations.append(chunk_locations)
-              del distances  # Drop reference to allow garbage collection
+        all_scores.append(chunk_scores)
+        all_locations.append(chunk_locations)
+        del distances  # Drop reference to allow garbage collection
 
-          # Concatenate results from all chunks
-          patch_scores = torch.cat(all_scores, dim=0)
-          locations = torch.cat(all_locations, dim=0)
+      # Concatenate results from all chunks
+      patch_scores = torch.cat(all_scores, dim=0)
+      locations = torch.cat(all_locations, dim=0)
 
-      return patch_scores, locations
+    return patch_scores, locations
 
   def compute_anomaly_score(
-      self,
-      patch_scores: torch.Tensor,
-      locations: torch.Tensor,
-      embedding: torch.Tensor,
+    self,
+    patch_scores: torch.Tensor,
+    locations: torch.Tensor,
+    embedding: torch.Tensor,
+    memory_bank: torch.Tensor,
   ) -> torch.Tensor:
-      """Compute image-level anomaly scores.
+    """Compute image-level anomaly scores.
 
-      Implements the paper's weighted scoring mechanism that considers both
-      the distance to nearest neighbors and the local neighborhood structure
-      in the memory bank.
+    Implements the paper's weighted scoring mechanism that considers both
+    the distance to nearest neighbors and the local neighborhood structure
+    in the memory bank.
 
-      Args:
-          patch_scores (torch.Tensor): Patch-level anomaly scores.
-          locations (torch.Tensor): Memory bank indices of nearest neighbors.
-          embedding (torch.Tensor): Input embeddings that generated the scores.
+    Args:
+      patch_scores (torch.Tensor): Patch-level anomaly scores.
+      locations (torch.Tensor): Memory bank indices of nearest neighbors.
+      embedding (torch.Tensor): Input embeddings that generated the scores.
+      memory_bank (torch.Tensor): Used memory bank.
 
-      Returns:
-          torch.Tensor: Image-level anomaly scores.
+    Returns:
+      torch.Tensor: Image-level anomaly scores.
 
-      Example:
-          >>> patch_scores = torch.randn(32, 49)  # 7x7 patches
-          >>> locations = torch.randint(0, 1000, (32, 49))
-          >>> embedding = torch.randn(32 * 49, 512)
-          >>> scores = model.compute_anomaly_score(patch_scores, locations,
-          ...                                     embedding)
-          >>> scores.shape
-          torch.Size([32])
-
-      Note:
-          When ``num_neighbors=1``, returns the maximum patch score directly.
-          Otherwise, computes weighted scores using neighborhood information.
-      """
-      # Don't need to compute weights if num_neighbors is 1
-      if self.num_neighbors == 1:
-          return patch_scores.amax(1)
-      batch_size, num_patches = patch_scores.shape
-      # 1. Find the patch with the largest distance to it's nearest neighbor in each image
-      max_patches = torch.argmax(patch_scores, dim=1)  # indices of m^test,* in the paper
-      # m^test,* in the paper
-      max_patches_features = embedding.reshape(batch_size, num_patches, -1)[torch.arange(batch_size), max_patches]
-      # 2. Find the distance of the patch to it's nearest neighbor, and the location of the nn in the membank
-      score = patch_scores[torch.arange(batch_size), max_patches]  # s^* in the paper
-      nn_index = locations[torch.arange(batch_size), max_patches]  # indices of m^* in the paper
-      # 3. Find the support samples of the nearest neighbor in the membank
-      nn_sample = self.memory_bank[nn_index, :]  # m^* in the paper
-      # indices of N_b(m^*) in the paper
-      memory_bank_effective_size = self.memory_bank.shape[0]  # edge case when memory bank is too small
-      _, support_samples = self.nearest_neighbors(
-          nn_sample,
-          n_neighbors=min(self.num_neighbors, memory_bank_effective_size),
-      )
-      # 4. Find the distance of the patch features to each of the support samples
-      distances = self.euclidean_dist(max_patches_features.unsqueeze(1), self.memory_bank[support_samples])
-      # 5. Apply softmax to find the weights
-      weights = (1 - F.softmax(distances.squeeze(1), 1))[..., 0]
-      # 6. Apply the weight factor to the score
-      return weights * score  # s in the paper
+    Note:
+      When ``num_neighbors=1``, returns the maximum patch score directly.
+      Otherwise, computes weighted scores using neighborhood information.
+    """
+    # Don't need to compute weights if num_neighbors is 1
+    if self.num_neighbors == 1:
+      return patch_scores.amax(1)
+    batch_size, num_patches = patch_scores.shape
+    # 1. Find the patch with the largest distance to it's nearest neighbor in each image
+    max_patches = torch.argmax(patch_scores, dim=1)  # indices of m^test,* in the paper
+    # m^test,* in the paper
+    max_patches_features = embedding.reshape(batch_size, num_patches, -1)[torch.arange(batch_size), max_patches]
+    # 2. Find the distance of the patch to it's nearest neighbor, and the location of the nn in the membank
+    score = patch_scores[torch.arange(batch_size), max_patches]  # s^* in the paper
+    nn_index = locations[torch.arange(batch_size), max_patches]  # indices of m^* in the paper
+    # 3. Find the support samples of the nearest neighbor in the membank
+    nn_sample = memory_bank[nn_index, :]  # m^* in the paper
+    # indices of N_b(m^*) in the paper
+    memory_bank_effective_size = memory_bank.shape[0]  # edge case when memory bank is too small
+    _, support_samples = self.nearest_neighbors(
+      nn_sample,
+      n_neighbors=min(self.num_neighbors, memory_bank_effective_size),
+      memory_bank=memory_bank
+    )
+    # 4. Find the distance of the patch features to each of the support samples
+    distances = self.euclidean_dist(max_patches_features.unsqueeze(1), memory_bank[support_samples])
+    # 5. Apply softmax to find the weights
+    weights = (1 - F.softmax(distances.squeeze(1), 1))[..., 0]
+    # 6. Apply the weight factor to the score
+    return weights * score  # s in the paper
