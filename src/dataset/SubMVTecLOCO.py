@@ -86,7 +86,7 @@ def get_configured_ds(test_split: SampleType | None = None, use_default: bool = 
     root=config.ds_path,
     category=config.category,
     num_workers=config.worker_count,
-    use_unmodified_ds=use_default
+    use_unmodified_ds=use_default,
     **opt("train_batch_size",config.batch_size),
     **opt("eval_batch_size",config.batch_size),
     **opt("use_test_split", test_split),
