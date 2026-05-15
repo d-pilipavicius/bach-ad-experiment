@@ -1,7 +1,7 @@
-from ModelConfig import ModelConfig
 from args import RunType, read_args
 from model.get_model import get_model
-from model.run_model import train_model, test_model, run_model
+from ModelConfig import ModelConfig, ModelType
+from model.run_model import train_model, test_model, run_model, train_dual_patchcore
 
 def main() -> None:
   run_type, image_path = read_args()
@@ -10,7 +10,10 @@ def main() -> None:
 
   match run_type:
     case RunType.TRAIN:
-      train_model(model)
+      if config.model is ModelType.DUALPATCHCORE:
+        train_dual_patchcore(model)
+      else:
+        train_model(model)
     case RunType.TEST:
       test_model(model)
     case RunType.IMAGE:

@@ -32,6 +32,7 @@ class SubMVTecLOCO(MVTecLOCO):
     val_split_ratio: float | None = None,
     seed: int | None = None,
     use_test_split: SampleType | None = None,
+    use_unmodified_ds: bool = False,
   ) -> None:
     super().__init__(
       **opt("root", root),
@@ -50,9 +51,13 @@ class SubMVTecLOCO(MVTecLOCO):
       seed=seed
     )
     self.use_test_split = use_test_split
+    self.use_unmodified_ds = use_unmodified_ds
 
   def _setup(self, _stage: str | None = None) -> None:
     super()._setup(_stage)
+    if self.use_unmodified_ds:
+      return
+
     config = ModelConfig()
 
     train_ds = self.train_data.samples
@@ -75,12 +80,13 @@ class SubMVTecLOCO(MVTecLOCO):
     self.train_data.samples = train_ds
     self.test_data.samples = test_ds
 
-def get_configured_ds(test_split: SampleType | None = None) -> SubMVTecLOCO:
+def get_configured_ds(test_split: SampleType | None = None, use_default: bool = False) -> SubMVTecLOCO:
   config = ModelConfig()
   dataset = SubMVTecLOCO(
     root=config.ds_path,
     category=config.category,
     num_workers=config.worker_count,
+    use_unmodified_ds=use_default
     **opt("train_batch_size",config.batch_size),
     **opt("eval_batch_size",config.batch_size),
     **opt("use_test_split", test_split),
@@ -94,8 +100,8 @@ def _reduce_dataset(dataset: DataFrame, size: int = None, random_samples: bool |
     random_samples = False  
   if size is None:
     return
-  if size < 1:
-    raise ValueError("Train dataset must have a positive number of data")
+  if size < 0:
+    raise ValueError("Train dataset must have a non-negative number of data")
   
   if size > len(dataset):
     raise ValueError(f"Train dataset contains {len(dataset)} images, but trying to generate split with {size} images")

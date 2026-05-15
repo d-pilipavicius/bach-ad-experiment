@@ -76,6 +76,51 @@
       "max_epochs": 100
     },
     {
+      "name": "patch-screw-fsl",
+      "model": "dualpatchcore",
+      "category": "screw_bag",
+      "batch_size": 8,
+      "train_image_count": 0,
+      "trn_logical": ["023.png", "112.png"],
+      "trn_structural": ["000.png", "018.png"]
+    },
+    {
+      "name": "patch-break-fsl",
+      "model": "dualpatchcore",
+      "category": "breakfast_box",
+      "batch_size": 8,
+      "train_image_count": 0,
+      "trn_logical": ["000.png", "036.png"],
+      "trn_structural": ["087.png", "010.png"]
+    },
+    {
+      "name": "patch-juice-fsl",
+      "model": "dualpatchcore",
+      "category": "juice_bottle",
+      "batch_size": 8,
+      "train_image_count": 0,
+      "trn_logical": ["000.png", "027.png"],
+      "trn_structural": ["001.png", "023.png"]
+    },
+    {
+      "name": "patch-pins-fsl",
+      "model": "dualpatchcore",
+      "category": "pushpins",
+      "batch_size": 8,
+      "train_image_count": 0,
+      "trn_logical": ["018.png", "061.png"],
+      "trn_structural": ["000.png", "050.png"]
+    },
+    {
+      "name": "patch-splic-fsl",
+      "model": "dualpatchcore",
+      "category": "splicing_connectors",
+      "batch_size": 8,
+      "train_image_count": 0,
+      "trn_logical": ["001.png", "003.png"],
+      "trn_structural": ["052.png", "047.png"]
+    },
+    {
       "name": "patch-screw",
       "model": "patchcore",
       "category": "screw_bag",

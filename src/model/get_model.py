@@ -1,5 +1,5 @@
 from ModelConfig import ModelType
-from model.patchcore import load_patchcore
+from model.patchcore import load_patchcore, load_dual_patchcore
 from model.efficientad import load_efficientad
 from model.cfa import load_cfa
 
@@ -13,5 +13,7 @@ def get_model(type: ModelType, pretrained: bool = False) -> AnomalibModule:
       model = load_efficientad(pretrained)
     case ModelType.CFA:
       model = load_cfa(pretrained)
-  
+    case ModelType.DUALPATCHCORE: 
+      model = load_dual_patchcore(pretrained)
+
   return model

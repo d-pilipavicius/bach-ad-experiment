@@ -2,7 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
+This model is a changed version of the PatchCore anomaly detection model.
+
 Paper: https://arxiv.org/abs/2106.08265
+
+It adds an additional anomaly memory bank, but this implementation is just a prototype.
+Actual implementation should determine better ways of filtering out feature maps for the anomaly memory bank.
 """
 
 from enum import Enum
@@ -15,7 +20,6 @@ from torch.nn import functional as F  # noqa: N812
 
 from anomalib.data import InferenceBatch
 from anomalib.models.components import DynamicBufferMixin, KCenterGreedy, TimmFeatureExtractor
-from anomalib.utils import deprecate
 
 from anomalib.models.image.patchcore.anomaly_map import AnomalyMapGenerator
 
@@ -103,16 +107,30 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
       raise ValueError(msg)
 
     # apply nearest neighbor search
-    patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1, memory_bank=self.memory_bank)
+    good_patch_scores, good_locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1, memory_bank=self.memory_bank)
+    anom_patch_scores, anom_locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1, memory_bank=self.anomaly_memory_bank)
+    
     # reshape to batch dimension
-    patch_scores = patch_scores.reshape((batch_size, -1))
-    locations = locations.reshape((batch_size, -1))
+    good_patch_scores = good_patch_scores.reshape((batch_size, -1))
+    good_locations = good_locations.reshape((batch_size, -1))
+    anom_patch_scores = anom_patch_scores.reshape((batch_size, -1))
+    anom_locations = anom_locations.reshape((batch_size, -1))
+
     # compute anomaly score
-    pred_score = self.compute_anomaly_score(patch_scores, locations, embedding, self.memory_bank)
+    pred_score = self.compute_anomaly_score(good_patch_scores, good_locations, embedding, self.memory_bank)
+
+    # calculate best odds
+    patch_scores = good_patch_scores.clone()
+    mask = anom_patch_scores < good_patch_scores
+    patch_scores[mask] = good_patch_scores[mask] + anom_patch_scores[mask]
+    print(f"mask ratio: {mask.float().mean().item()}")
+
     # reshape to w, h
     patch_scores = patch_scores.reshape((batch_size, 1, width, height))
+
     # get anomaly map
     anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
+
 
     return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
@@ -157,8 +175,8 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
     embedding_size = embedding.size(1)
     return embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
 
-  @deprecate(args={"embeddings": None}, since="2.1.0", reason="Use the default memory bank instead.")
-  def subsample_embedding(self, sampling_ratio: float, embeddings: torch.Tensor = None) -> None:
+
+  def subsample_embedding(self, sampling_ratio: float) -> None:
     """Subsample the memory_banks embeddings using coreset selection.
 
     Uses k-center-greedy coreset subsampling to select a representative
@@ -166,23 +184,52 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
 
     Args:
       sampling_ratio (float): Fraction of embeddings to keep, in range (0,1].
-      embeddings (torch.Tensor): **[DEPRECATED]**
-      This argument is deprecated and will be removed in a future release.
-      Use the default behavior (i.e., rely on `self.memory_bank`) instead.
     """
-    if embeddings is not None:
-      del embeddings
 
     if len(self.embedding_store) == 0:
       msg = "Embedding store is empty. Cannot perform coreset selection."
       raise ValueError(msg)
 
-    # Coreset Subsampling
-    self.memory_bank = torch.vstack(self.embedding_store)
-    self.embedding_store.clear()
+    if self.train_type is TrainType.GOOD:
+      # Coreset Subsampling
+      self.memory_bank = torch.vstack(self.embedding_store)
+      self.embedding_store.clear()
 
-    sampler = KCenterGreedy(embedding=self.memory_bank, sampling_ratio=sampling_ratio)
-    self.memory_bank = sampler.sample_coreset()
+      sampler = KCenterGreedy(embedding=self.memory_bank, sampling_ratio=sampling_ratio)
+      self.memory_bank = sampler.sample_coreset()
+    else:
+      if self.memory_bank.size(0) == 0:
+        msg = "Good memory bank is empty. Cannot fill anomalous memory bank."
+        raise ValueError(msg)
+      
+      self.anomaly_memory_bank = torch.vstack(self.embedding_store)
+      self.embedding_store.clear()
+
+      self.anomaly_memory_bank = self.cos_similarity_embeddings_reduction(self.anomaly_memory_bank)
+      self.filter_anomalous_with_nn()
+  
+  # Used for similar embedding reduction from the memory bank by a selected threshold
+  def cos_similarity_embeddings_reduction(self, memory_bank: torch.Tensor, threshold: float = 0.97) -> torch.Tensor:
+    temp_bank_n = F.normalize(memory_bank, dim=1)
+
+    sim_matrix = temp_bank_n @ temp_bank_n.T
+    sim_matrix.fill_diagonal_(-1.0)
+
+    max_sim = sim_matrix.max(dim=1).values
+    mask = max_sim < threshold
+
+    return memory_bank[mask]
+  
+  def filter_anomalous_with_nn(self, assume_anomalous: float = 0.90) -> None:
+    distances, _ = self.nearest_neighbors(
+      embedding=self.anomaly_memory_bank,
+      n_neighbors=1,
+      memory_bank=self.memory_bank
+    )
+
+    threshold = torch.quantile(distances, assume_anomalous)
+    mask = distances > threshold 
+    self.anomaly_memory_bank = self.anomaly_memory_bank[mask]
 
   @staticmethod
   def euclidean_dist(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -235,13 +282,6 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
         - Indices of nearest neighbors (shape: ``(n, k)``)
         where ``n`` is number of query embeddings and ``k`` is
         ``n_neighbors``.
-
-    Example:
-      >>> embedding = torch.randn(100, 512)
-      >>> # Assuming memory_bank is already populated
-      >>> scores, locations = model.nearest_neighbors(embedding, n_neighbors=5)
-      >>> scores.shape, locations.shape
-      (torch.Size([100, 5]), torch.Size([100, 5]))
     """
     n = embedding.shape[0]
     chunk_size = DEFAULT_CHUNK_SIZE

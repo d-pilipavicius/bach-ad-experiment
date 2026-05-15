@@ -1,8 +1,9 @@
 from metrics.metrics import get_evaluator
-from utils.io import get_model_name, failed_loading_model
+from utils.model import init_pretrained_model
 
-import torch
 from anomalib.models import Patchcore
+
+from .dual_patchcore.lightning_model import DualPatchcore
 
 def load_patchcore(pretrained: bool = False) -> Patchcore:
   evaluator = get_evaluator()
@@ -12,11 +13,18 @@ def load_patchcore(pretrained: bool = False) -> Patchcore:
   )
 
   if pretrained:
-    ckpt_path = get_model_name()
-    try:
-      ckpt = torch.load(ckpt_path, weights_only=False)
-    except Exception as e:
-      failed_loading_model(e)
-    model.load_state_dict(ckpt["state_dict"], strict=False)
+    init_pretrained_model(model)
+  
+  return model
+
+def load_dual_patchcore(pretrained: bool = False) -> DualPatchcore:
+  evaluator = get_evaluator()
+  model = DualPatchcore(
+    coreset_sampling_ratio=0.1,
+    evaluator=evaluator,
+  )
+
+  if pretrained:
+    init_pretrained_model(model)
   
   return model

@@ -22,7 +22,7 @@ from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import Visualizer
 
-from .torch_model import DualPatchcoreModel
+from .torch_model import DualPatchcoreModel, TrainType
 
 logger = logging.getLogger(__name__)
 
@@ -30,44 +30,44 @@ logger = logging.getLogger(__name__)
 class DualPatchcore(MemoryBankMixin, AnomalibModule):
 
   def __init__(
-      self,
-      backbone: str = "wide_resnet50_2",
-      layers: Sequence[str] = ("layer2", "layer3"),
-      pre_trained: bool = True,
-      coreset_sampling_ratio: float = 0.1,
-      num_neighbors: int = 9,
-      precision: str | PrecisionType = PrecisionType.FLOAT32,
-      pre_processor: nn.Module | bool = True,
-      post_processor: nn.Module | bool = True,
-      evaluator: Evaluator | bool = True,
-      visualizer: Visualizer | bool = True,
+    self,
+    backbone: str = "wide_resnet50_2",
+    layers: Sequence[str] = ("layer2", "layer3"),
+    pre_trained: bool = True,
+    coreset_sampling_ratio: float = 0.1,
+    num_neighbors: int = 9,
+    precision: str | PrecisionType = PrecisionType.FLOAT32,
+    pre_processor: nn.Module | bool = True,
+    post_processor: nn.Module | bool = True,
+    evaluator: Evaluator | bool = True,
+    visualizer: Visualizer | bool = True,
   ) -> None:
-      super().__init__(
-          pre_processor=pre_processor,
-          post_processor=post_processor,
-          evaluator=evaluator,
-          visualizer=visualizer,
-      )
+    super().__init__(
+      pre_processor=pre_processor,
+      post_processor=post_processor,
+      evaluator=evaluator,
+      visualizer=visualizer,
+    )
 
-      self.model: DualPatchcoreModel = DualPatchcoreModel(
-          backbone=backbone,
-          pre_trained=pre_trained,
-          layers=layers,
-          num_neighbors=num_neighbors,
-      )
-      self.coreset_sampling_ratio = coreset_sampling_ratio
+    self.model: DualPatchcoreModel = DualPatchcoreModel(
+      backbone=backbone,
+      pre_trained=pre_trained,
+      layers=layers,
+      num_neighbors=num_neighbors,
+    )
+    self.coreset_sampling_ratio = coreset_sampling_ratio
 
-      if isinstance(precision, str):
-          precision = PrecisionType(precision.lower())
+    if isinstance(precision, str):
+      precision = PrecisionType(precision.lower())
 
-      if precision == PrecisionType.FLOAT16:
-          self.model = self.model.half()
-      elif precision == PrecisionType.FLOAT32:
-          self.model = self.model.float()
-      else:
-          msg = f"""Unsupported precision type: {precision}.
-          Supported types are: {PrecisionType.FLOAT16}, {PrecisionType.FLOAT32}."""
-          raise ValueError(msg)
+    if precision == PrecisionType.FLOAT16:
+      self.model = self.model.half()
+    elif precision == PrecisionType.FLOAT32:
+      self.model = self.model.float()
+    else:
+      msg = f"""Unsupported precision type: {precision}.
+      Supported types are: {PrecisionType.FLOAT16}, {PrecisionType.FLOAT32}."""
+      raise ValueError(msg)
 
   @classmethod
   def configure_pre_processor(
@@ -211,3 +211,8 @@ class DualPatchcore(MemoryBankMixin, AnomalibModule):
               converts raw scores to anomaly predictions
       """
       return PostProcessor()
+  
+  def initiate_secondary_training(self):
+    if self.model.train_type is TrainType.GOOD:
+      self._is_fitted[0] = False
+      self.model.train_type = TrainType.ANOMALOUS

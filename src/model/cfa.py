@@ -1,7 +1,6 @@
 from metrics.metrics import get_evaluator
-from utils.io import get_model_name, failed_loading_model
+from utils.model import init_pretrained_model
 
-import torch
 from anomalib.models import Cfa
 
 def load_cfa(pretrained: bool = False) -> Cfa:
@@ -11,11 +10,6 @@ def load_cfa(pretrained: bool = False) -> Cfa:
   )
 
   if pretrained:
-    ckpt_path = get_model_name()
-    try:
-      ckpt = torch.load(ckpt_path, weights_only=False)
-    except Exception as e:
-      failed_loading_model(e)
-    model.load_state_dict(ckpt["state_dict"], strict=False)
+    init_pretrained_model(model)
   
   return model

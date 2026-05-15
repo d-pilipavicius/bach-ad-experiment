@@ -8,12 +8,23 @@ from dataset.SubMVTecLOCO import get_configured_ds, SampleType
 from anomalib.engine import Engine
 from anomalib.models import AnomalibModule
 
+from .dual_patchcore.lightning_model import DualPatchcore
+
 def train_model(model: AnomalibModule) -> any:
   dataset = get_configured_ds()
   engine = _get_engine()
   output = engine.fit(model, dataset)
   move_model(engine.trainer.checkpoint_callback.best_model_path)
   return output
+
+def train_dual_patchcore(model: DualPatchcore) -> None:
+  engine = _get_engine()
+  dataset = get_configured_ds(use_default=True)
+  engine.fit(model, dataset)
+  model.initiate_secondary_training()
+  dataset = get_configured_ds()
+  engine.fit(model, dataset)
+  move_model(engine.trainer.checkpoint_callback.best_model_path)
 
 def test_model(model: AnomalibModule) -> any:
   engine = _get_engine()
