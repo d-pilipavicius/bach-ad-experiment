@@ -117,127 +117,100 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
     return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
   def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
-      """Generate embedding by concatenating multi-scale feature maps.
+    """Generate embedding by concatenating multi-scale feature maps.
 
-      Combines feature maps from different CNN layers by upsampling them to a
-      common size and concatenating along the channel dimension.
+    Combines feature maps from different CNN layers by upsampling them to a
+    common size and concatenating along the channel dimension.
 
-      Args:
-          features (dict[str, torch.Tensor]): Dictionary mapping layer names to
-              feature tensors extracted from the backbone CNN.
+    Args:
+      features (dict[str, torch.Tensor]): Dictionary mapping layer names to
+        feature tensors extracted from the backbone CNN.
 
-      Returns:
-          torch.Tensor: Concatenated feature embedding of shape
-              ``(batch_size, num_features, height, width)``.
+    Returns:
+      torch.Tensor: Concatenated feature embedding of shape
+        ``(batch_size, num_features, height, width)``.
+    """
 
-      Example:
-          >>> features = {
-          ...     "layer1": torch.randn(32, 64, 56, 56),
-          ...     "layer2": torch.randn(32, 128, 28, 28)
-          ... }
-          >>> embedding = model.generate_embedding(features)
-          >>> embedding.shape
-          torch.Size([32, 192, 56, 56])
-      """
-      embeddings = features[self.layers[0]]
-      for layer in self.layers[1:]:
-          layer_embedding = features[layer]
-          layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="bilinear")
-          embeddings = torch.cat((embeddings, layer_embedding), 1)
+    embeddings = features[self.layers[0]]
+    for layer in self.layers[1:]:
+      layer_embedding = features[layer]
+      layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="bilinear")
+      embeddings = torch.cat((embeddings, layer_embedding), 1)
 
-      return embeddings
+    return embeddings
 
   @staticmethod
   def reshape_embedding(embedding: torch.Tensor) -> torch.Tensor:
-      """Reshape embedding tensor for patch-wise processing.
+    """Reshape embedding tensor for patch-wise processing.
 
-      Converts a 4D embedding tensor into a 2D matrix where each row represents
-      a patch embedding vector.
+    Converts a 4D embedding tensor into a 2D matrix where each row represents
+    a patch embedding vector.
 
-      Args:
-          embedding (torch.Tensor): Input embedding tensor of shape
-              ``(batch_size, embedding_dim, height, width)``.
+    Args:
+      embedding (torch.Tensor): Input embedding tensor of shape
+        ``(batch_size, embedding_dim, height, width)``.
 
-      Returns:
-          torch.Tensor: Reshaped embedding tensor of shape
-              ``(batch_size * height * width, embedding_dim)``.
-
-      Example:
-          >>> embedding = torch.randn(32, 512, 7, 7)
-          >>> reshaped = PatchcoreModel.reshape_embedding(embedding)
-          >>> reshaped.shape
-          torch.Size([1568, 512])
-      """
-      embedding_size = embedding.size(1)
-      return embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
+    Returns:
+      torch.Tensor: Reshaped embedding tensor of shape
+        ``(batch_size * height * width, embedding_dim)``.
+    """
+    embedding_size = embedding.size(1)
+    return embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
 
   @deprecate(args={"embeddings": None}, since="2.1.0", reason="Use the default memory bank instead.")
   def subsample_embedding(self, sampling_ratio: float, embeddings: torch.Tensor = None) -> None:
-      """Subsample the memory_banks embeddings using coreset selection.
+    """Subsample the memory_banks embeddings using coreset selection.
 
-      Uses k-center-greedy coreset subsampling to select a representative
-      subset of patch embeddings to store in the memory bank.
+    Uses k-center-greedy coreset subsampling to select a representative
+    subset of patch embeddings to store in the memory bank.
 
-      Args:
-          sampling_ratio (float): Fraction of embeddings to keep, in range (0,1].
-          embeddings (torch.Tensor): **[DEPRECATED]**
-          This argument is deprecated and will be removed in a future release.
-          Use the default behavior (i.e., rely on `self.memory_bank`) instead.
+    Args:
+      sampling_ratio (float): Fraction of embeddings to keep, in range (0,1].
+      embeddings (torch.Tensor): **[DEPRECATED]**
+      This argument is deprecated and will be removed in a future release.
+      Use the default behavior (i.e., rely on `self.memory_bank`) instead.
+    """
+    if embeddings is not None:
+      del embeddings
 
-      Example:
-          >>> model.memory_bank = torch.randn(1000, 512)
-          >>> model.subsample_embedding(sampling_ratio=0.1)
-          >>> model.memory_bank.shape
-          torch.Size([100, 512])
-      """
-      if embeddings is not None:
-          del embeddings
+    if len(self.embedding_store) == 0:
+      msg = "Embedding store is empty. Cannot perform coreset selection."
+      raise ValueError(msg)
 
-      if len(self.embedding_store) == 0:
-          msg = "Embedding store is empty. Cannot perform coreset selection."
-          raise ValueError(msg)
+    # Coreset Subsampling
+    self.memory_bank = torch.vstack(self.embedding_store)
+    self.embedding_store.clear()
 
-      # Coreset Subsampling
-      self.memory_bank = torch.vstack(self.embedding_store)
-      self.embedding_store.clear()
-
-      sampler = KCenterGreedy(embedding=self.memory_bank, sampling_ratio=sampling_ratio)
-      self.memory_bank = sampler.sample_coreset()
+    sampler = KCenterGreedy(embedding=self.memory_bank, sampling_ratio=sampling_ratio)
+    self.memory_bank = sampler.sample_coreset()
 
   @staticmethod
   def euclidean_dist(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-      """Compute pairwise Euclidean distances between two sets of vectors.
+    """Compute pairwise Euclidean distances between two sets of vectors.
 
-      Implements an efficient matrix computation of Euclidean distances between
-      all pairs of vectors in ``x`` and ``y`` without using ``torch.cdist()``.
+    Implements an efficient matrix computation of Euclidean distances between
+    all pairs of vectors in ``x`` and ``y`` without using ``torch.cdist()``.
 
-      Args:
-          x (torch.Tensor): First tensor of shape ``(n, d)``.
-          y (torch.Tensor): Second tensor of shape ``(m, d)``.
+    Args:
+      x (torch.Tensor): First tensor of shape ``(n, d)``.
+      y (torch.Tensor): Second tensor of shape ``(m, d)``.
 
-      Returns:
-          torch.Tensor: Distance matrix of shape ``(n, m)`` where element
-              ``(i,j)`` is the distance between row ``i`` of ``x`` and row
-              ``j`` of ``y``.
+    Returns:
+      torch.Tensor: Distance matrix of shape ``(n, m)`` where element
+        ``(i,j)`` is the distance between row ``i`` of ``x`` and row
+        ``j`` of ``y``.
 
-      Example:
-          >>> x = torch.randn(100, 512)
-          >>> y = torch.randn(50, 512)
-          >>> distances = PatchcoreModel.euclidean_dist(x, y)
-          >>> distances.shape
-          torch.Size([100, 50])
-
-      Note:
-          This implementation avoids using ``torch.cdist()`` for better
-          compatibility with ONNX export and OpenVINO conversion.
-      """
-      x_norm = x.pow(2).sum(dim=-1, keepdim=True)
-      y_norm = y.pow(2).sum(dim=-1, keepdim=True)
-      res = torch.matmul(x, y.transpose(-2, -1))
-      res.mul_(-2)
-      res.add_(x_norm)
-      res.add_(y_norm.transpose(-2, -1))
-      return res.clamp_min_(0).sqrt_()
+    Note:
+      This implementation avoids using ``torch.cdist()`` for better
+      compatibility with ONNX export and OpenVINO conversion.
+    """
+    x_norm = x.pow(2).sum(dim=-1, keepdim=True)
+    y_norm = y.pow(2).sum(dim=-1, keepdim=True)
+    res = torch.matmul(x, y.transpose(-2, -1))
+    res.mul_(-2)
+    res.add_(x_norm)
+    res.add_(y_norm.transpose(-2, -1))
+    return res.clamp_min_(0).sqrt_()
 
   def nearest_neighbors(
     self, 
