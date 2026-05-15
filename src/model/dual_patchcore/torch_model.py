@@ -106,31 +106,34 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
       msg = "Memory bank is empty. Cannot provide anomaly scores"
       raise ValueError(msg)
 
+    is_anom_bank_loaded = self.anomaly_memory_bank.size(0) == 0
     # apply nearest neighbor search
     good_patch_scores, good_locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1, memory_bank=self.memory_bank)
-    anom_patch_scores, anom_locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1, memory_bank=self.anomaly_memory_bank)
+    if is_anom_bank_loaded:
+      anom_patch_scores, anom_locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1, memory_bank=self.anomaly_memory_bank)
     
     # reshape to batch dimension
     good_patch_scores = good_patch_scores.reshape((batch_size, -1))
     good_locations = good_locations.reshape((batch_size, -1))
-    anom_patch_scores = anom_patch_scores.reshape((batch_size, -1))
-    anom_locations = anom_locations.reshape((batch_size, -1))
+    
+    if is_anom_bank_loaded:
+      anom_patch_scores = anom_patch_scores.reshape((batch_size, -1))
+      anom_locations = anom_locations.reshape((batch_size, -1))
 
     # compute anomaly score
     pred_score = self.compute_anomaly_score(good_patch_scores, good_locations, embedding, self.memory_bank)
 
     # calculate best odds
-    patch_scores = good_patch_scores.clone()
-    mask = anom_patch_scores < good_patch_scores
-    patch_scores[mask] = good_patch_scores[mask] + anom_patch_scores[mask]
-    print(f"mask ratio: {mask.float().mean().item()}")
+    if is_anom_bank_loaded:
+      patch_scores = good_patch_scores.clone()
+      mask = anom_patch_scores < good_patch_scores
+      patch_scores[mask] = good_patch_scores[mask] + anom_patch_scores[mask]
 
     # reshape to w, h
     patch_scores = patch_scores.reshape((batch_size, 1, width, height))
 
     # get anomaly map
     anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
-
 
     return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
