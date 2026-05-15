@@ -106,7 +106,7 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
       msg = "Memory bank is empty. Cannot provide anomaly scores"
       raise ValueError(msg)
 
-    is_anom_bank_loaded = self.anomaly_memory_bank.size(0) == 0
+    is_anom_bank_loaded = self.anomaly_memory_bank.size(0) != 0
     # apply nearest neighbor search
     good_patch_scores, good_locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1, memory_bank=self.memory_bank)
     if is_anom_bank_loaded:
@@ -124,8 +124,8 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
     pred_score = self.compute_anomaly_score(good_patch_scores, good_locations, embedding, self.memory_bank)
 
     # calculate best odds
+    patch_scores = good_patch_scores.clone()
     if is_anom_bank_loaded:
-      patch_scores = good_patch_scores.clone()
       mask = anom_patch_scores < good_patch_scores
       patch_scores[mask] = good_patch_scores[mask] + anom_patch_scores[mask]
 
