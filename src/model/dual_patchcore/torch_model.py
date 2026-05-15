@@ -53,9 +53,11 @@ class DualPatchcoreModel(DynamicBufferMixin, nn.Module):
     self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
     self.anomaly_map_generator = AnomalyMapGenerator()
     self.memory_bank: torch.Tensor
-    self.anomaly_memory_bank: TrainType
+    self.anomaly_memory_bank: torch.Tensor
     self.register_buffer("memory_bank", torch.empty(0))
+    self.register_buffer("anomaly_memory_bank", torch.empty(0))
     self.embedding_store: list[torch.tensor] = []
+    self.train_type = TrainType.GOOD
 
   def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | InferenceBatch:
     """Process input tensor through the model.
