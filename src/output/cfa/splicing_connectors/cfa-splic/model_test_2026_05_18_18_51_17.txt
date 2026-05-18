@@ -1,0 +1,4 @@
+  TEST_DS  | AUROC_img | F1_img | AUPR_pixel | IoU_pixel
+   FULL    |   0.5233  | 0.0406 |   0.3556   |  0.0010
+  LOGICAL  |   0.5093  | 0.0000 |   0.3882   |  0.0000
+STRUCTURAL |   0.5412  | 0.0899 |   0.3311   |  0.0188
