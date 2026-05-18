@@ -8,7 +8,15 @@ class EfficientAd(_EfficientAd):
     output = super().test_step(batch, batch_idx, *args, **kwargs)
 
     if output and output.pred_score:
-      output.pred_score = output.pred_score.view(-1)
+      output.pred_score = output.pred_score.squeeze(1)
+
+    return output
+  
+  def predict_step(self, batch, batch_idx, *args, **kwargs):
+    output = super().predict_step(batch, batch_idx, *args, **kwargs)
+
+    if output and output.pred_score:
+      output.pred_score = output.pred_score.squeeze(1)
 
     return output
 
