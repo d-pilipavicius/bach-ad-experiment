@@ -1,9 +1,9 @@
 from utils.dict import opt
-from ModelConfig import ModelConfig
-from metrics.metrics import format_metrics
 from utils.image import output_to_marked_pil
+from ModelConfig import ModelConfig, ModelType
 from utils.io import write_file, move_model, FileType
-from dataset.SubMVTecLOCO import get_configured_ds, SampleType
+from metrics.metrics import format_metrics, calculate_metrics
+from dataset.SubMVTecLOCO import get_configured_ds, SampleType, SubMVTecLOCO
 
 from anomalib.engine import Engine
 from anomalib.models import AnomalibModule
@@ -27,16 +27,14 @@ def train_dual_patchcore(model: DualPatchcore) -> None:
   move_model(engine.trainer.checkpoint_callback.best_model_path)
 
 def test_model(model: AnomalibModule) -> any:
-  engine = _get_engine()
-  
   full_ds = get_configured_ds()
-  full_otp = engine.test(model, full_ds)
+  full_otp = _test_model(model, full_ds)
   
   log_ds = get_configured_ds(SampleType.LOGICAL)
-  log_otp = engine.test(model, log_ds)
+  log_otp = _test_model(model, log_ds)
   
   str_ds = get_configured_ds(SampleType.STRUCTURAL)
-  str_otp = engine.test(model, str_ds)
+  str_otp = _test_model(model, str_ds)
   
   output = {
     "full": full_otp[0],
@@ -46,6 +44,13 @@ def test_model(model: AnomalibModule) -> any:
   formatted_output = format_metrics(output)
   write_file(FileType.TEST_DATA, formatted_output)
   return output
+
+# Anomalib's metric calculation with DualPatchcore fails, thus this method is introduced
+# Metrics are still held within the model configuration, because they were already created using such configuration
+def _test_model(model: AnomalibModule, dataset: SubMVTecLOCO) -> any:
+  engine = _get_engine()
+  predictions = engine.predict(model, datamodule=dataset)
+  return calculate_metrics(predictions)
 
 def run_model(model: AnomalibModule, image_filepath: str):
   engine = Engine()
