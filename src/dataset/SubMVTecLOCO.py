@@ -114,7 +114,11 @@ def _reduce_dataset(dataset: DataFrame, size: int = None, random_samples: bool |
   return dataset
 
 def _select_test_data(dataset: DataFrame, sample_type: SampleType) -> DataFrame:
-  return dataset[dataset["label"] == sample_type.value]
+  if sample_type is not SampleType.GOOD:
+    good_ds = dataset[dataset["label"] == SampleType.GOOD.value]
+
+  new_ds = dataset[dataset["label"] == sample_type.value]
+  return new_ds if good_ds is None else concat([good_ds, new_ds], ignore_index=True)
 
 def _split_dataset(dataset: DataFrame, sample_type: SampleType, sample_names: list[str]) -> tuple[DataFrame, DataFrame]:
   subset = dataset[
