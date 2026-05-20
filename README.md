@@ -1,5 +1,7 @@
 # Bachelor's experiment
 
+All models placed under [output](./src/output) are trained using Linux. Due to the way Anomalib exports models, these models might not work on systems using different operating systems.
+
 ## Fetch repository
 
 Fetch the current repository using
